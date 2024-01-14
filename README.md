@@ -11,7 +11,7 @@ Taskify is an open-source and memory-safe Task Management System (TMS) designed 
 + SeaORM Integration: SeaORM, a powerful Object-Relational Mapping (ORM) library, handles database interactions seamlessly, making data management effortless.
 + GitHub Integration: Taskify seamlessly integrates with GitHub, allowing you to track issues, assign tasks, and keep your GitHub workflow streamlined.
 
-## License:
+## License
 Taskify is licensed under the GNU General Public License v3.0 (GPLv3), a copyleft license that ensures the software remains free and open-source. This means that you can freely use, modify, and redistribute Taskify, but any derivative works must also be released under the GPLv3 license.
 
 ## Join Us in Building a Better Task Management Solution
