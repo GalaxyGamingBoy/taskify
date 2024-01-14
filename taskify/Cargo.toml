@@ -1,0 +1,10 @@
+[package]
+name = "taskify"
+description = "Taskify: Empowering Productivity with a Simple, Safe, and Integrated Task Management Solution"
+version = "0.0.1"
+edition = "2021"
+authors = ["Marios Mitsios <xrteach@gmail.com>"]
+readme = "../README.md"
+license = "GPL-3.0-or-later"
+
+[dependencies]
