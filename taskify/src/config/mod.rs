@@ -3,7 +3,7 @@
 //!
 //! ```
 //! # fn main() -> Result<(), std::io::Error> {
-//! let config = taskify::config::Config()?;
+//! let config = taskify::config::Config::load()?;
 //! # Ok(())
 //! # }
 //! ```
@@ -45,7 +45,7 @@ impl Config {
     /// # Examples:
     /// ```
     /// # fn main() -> Result<(), std::io::Error> {
-    /// let config = taskify::config::Config()?;
+    /// let config = taskify::config::Config::load()?;
     /// println!("{:?}", config);
     /// # Ok(())
     /// # }
