@@ -8,3 +8,7 @@ readme = "../README.md"
 license = "GPL-3.0-or-later"
 
 [dependencies]
+log = "0.4.20"
+serde = { version = "1.0.195", features = ["serde_derive"] }
+simplelog = "0.12.1"
+toml = "0.8.8"

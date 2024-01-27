@@ -1,59 +1,32 @@
-use std::io::stdout;
+use cli::app::{App, AppResult};
+use cli::event::{Event, EventHandler};
+use cli::handler::handle_key_events;
+use cli::tui::Tui;
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
+use std::io;
 
-use crossterm::{
-    event::{self, KeyCode, KeyEventKind},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
-};
-use ratatui::{
-    backend::CrosstermBackend,
-    style::Stylize,
-    widgets::{Block, Borders, Paragraph},
-    Terminal,
-};
+#[tokio::main]
+async fn main() -> AppResult<()> {
+    let mut app = App::new();
 
-fn ui() -> Result<(), std::io::Error> {
-    stdout()
-        .execute(EnterAlternateScreen)
-        .expect("Error while executing: EnterAlternateScreen");
-    enable_raw_mode().expect("Error while enabling raw mode");
+    let backend = CrosstermBackend::new(io::stderr());
+    let terminal = Terminal::new(backend)?;
+    let events = EventHandler::new(250);
+    let mut tui = Tui::new(terminal, events);
+    tui.init()?;
 
-    let mut term =
-        Terminal::new(CrosstermBackend::new(stdout())).expect("Error while creating a terminal");
-    term.clear()?;
-
-    loop {
-        term.draw(|frame| {
-            let area = frame.size();
-            frame.render_widget(
-                Paragraph::new("Hello World!")
-                    .block(Block::default().title("Info").borders(Borders::ALL))
-                    .white(),
-                area,
-            )
-        })?;
-
-        if event::poll(std::time::Duration::from_millis(16))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    if key.code == KeyCode::Char('q') {
-                        break;
-                    }
-                }
-            }
+    while app.running {
+        tui.draw(&mut app)?;
+        match tui.events.next().await? {
+            Event::Tick => app.tick(),
+            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+            Event::Mouse(_) => {}
+            Event::Resize(_, _) => {}
+            Event::Paste(_) => {}
         }
     }
 
-    stdout()
-        .execute(LeaveAlternateScreen)
-        .expect("Error while executing: LeaveAlternateScreen");
-    disable_raw_mode().expect("Error while disabling raw mode");
-
+    tui.exit()?;
     Ok(())
-}
-
-fn main() {
-    if taskify::init() {
-        ui().expect("There was an error running the CLI applcation.");
-    }
 }
