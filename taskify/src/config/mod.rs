@@ -1,5 +1,5 @@
 //! Config Module
-//! This module handles all tasks related to the config, such us loading & providing the config schema.
+//! This module handles all tasks related to the config, such us loading & providing the config schema or setting up the logger.
 //!
 //! ```
 //! # fn main() -> Result<(), std::io::Error> {
@@ -8,9 +8,10 @@
 //! # }
 //! ```
 
-use std::fs;
+use std::fs::{self, File};
 
 use serde::Deserialize;
+use simplelog::{CombinedLogger, SharedLogger, TermLogger, WriteLogger};
 
 /// The database configuration schema & structure.
 #[derive(Deserialize, Debug)]
@@ -57,5 +58,39 @@ impl Config {
             Ok(content) => Ok(toml::from_str(&content).unwrap()),
             Err(err) => Err(err),
         }
+    }
+}
+
+/// Initialized the logger using the [`crate::config::Logger`]
+///
+/// # Examples:
+/// ```
+/// # use taskify::config::{init_log, Logger};
+/// # fn main() -> Result<(), std::io::Error> {
+/// let logger_config = Logger { enabled: true, write_logs: true, log_path: "./taskify.log".into() };
+/// init_log(&logger_config);
+/// # Ok(())
+/// # }
+/// ```
+pub fn init_log(config: &Logger) {
+    let mut loggers: Vec<Box<dyn SharedLogger>> = vec![TermLogger::new(
+        log::LevelFilter::Debug,
+        simplelog::Config::default(),
+        simplelog::TerminalMode::Mixed,
+        simplelog::ColorChoice::Auto,
+    )];
+
+    if config.write_logs {
+        loggers.push(WriteLogger::new(
+            log::LevelFilter::Info,
+            simplelog::Config::default(),
+            File::create(config.log_path.clone()).unwrap(),
+        ))
+    }
+
+    if config.enabled {
+        CombinedLogger::init(loggers).expect("Error while initalizing logger!");
+
+        log::info!("Logging enabled and initialized!")
     }
 }

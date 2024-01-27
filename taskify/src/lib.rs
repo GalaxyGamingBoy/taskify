@@ -17,7 +17,10 @@ pub mod config;
 /// # }
 /// ```
 pub fn init() -> Result<Config, std::io::Error> {
-    config::Config::load()
+    let config = config::Config::load()?;
+    config::init_log(&config.logger);
+
+    Ok(config)
 }
 
 #[cfg(test)]
