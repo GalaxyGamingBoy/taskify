@@ -2,5 +2,6 @@
     "rust-analyzer.linkedProjects": [
         "./taskify/Cargo.toml",
         "./cli/Cargo.toml",
+        "./taskify/migration/Cargo.toml"
     ]
 }

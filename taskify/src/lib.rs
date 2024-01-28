@@ -10,23 +10,25 @@ pub mod config;
 ///
 /// # Examples
 /// ```
-/// # fn main() -> Result<(), std::io::Error> {
-/// let config = taskify::init()?;
+/// # #[tokio::test]
+/// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = taskify::init().await?;
 /// println!("{}", config.database.path); // Should print: "./taskify.db"
 /// # Ok(())
 /// # }
 /// ```
-pub fn init() -> Result<Config, std::io::Error> {
-    let config = config::Config::load()?;
+pub async fn init() -> Result<Config, Box<dyn std::error::Error>> {
+    let config = config::Config::load().expect("Error while loading config.toml");
     config::init_log(&config.logger);
+    config::init_db(&config.database).await?;
 
     Ok(config)
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn init() {
-        assert!(crate::init().is_ok())
+    #[tokio::test]
+    async fn init() {
+        assert!(crate::init().await.is_ok())
     }
 }

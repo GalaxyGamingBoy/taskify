@@ -2,7 +2,7 @@
 //! This module handles all tasks related to the config, such us loading & providing the config schema or setting up the logger.
 //!
 //! ```
-//! # fn main() -> Result<(), std::io::Error> {
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let config = taskify::config::Config::load()?;
 //! # Ok(())
 //! # }
@@ -10,6 +10,8 @@
 
 use std::fs::{self, File};
 
+use migration::MigratorTrait;
+use sea_orm::{DatabaseConnection, DbErr};
 use serde::Deserialize;
 use simplelog::{CombinedLogger, SharedLogger, TermLogger, WriteLogger};
 
@@ -29,6 +31,9 @@ pub struct Logger {
     /// Should logs be saved & written into a file?
     pub write_logs: bool,
 
+    /// Should logs be printed to stdout?
+    pub print_logs: bool,
+
     /// The log path that the logs will be saved in.
     pub log_path: String,
 }
@@ -45,18 +50,18 @@ impl Config {
     ///
     /// # Examples:
     /// ```
-    /// # fn main() -> Result<(), std::io::Error> {
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let config = taskify::config::Config::load()?;
     /// println!("{:?}", config);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn load() -> Result<Config, std::io::Error> {
+    pub fn load() -> Result<Config, Box<dyn std::error::Error>> {
         let content = fs::read_to_string("./config.toml");
 
         match content {
             Ok(content) => Ok(toml::from_str(&content).unwrap()),
-            Err(err) => Err(err),
+            Err(err) => Err(err.into()),
         }
     }
 }
@@ -66,19 +71,14 @@ impl Config {
 /// # Examples:
 /// ```
 /// # use taskify::config::{init_log, Logger};
-/// # fn main() -> Result<(), std::io::Error> {
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let logger_config = Logger { enabled: true, write_logs: true, log_path: "./taskify.log".into() };
 /// init_log(&logger_config);
 /// # Ok(())
 /// # }
 /// ```
 pub fn init_log(config: &Logger) {
-    let mut loggers: Vec<Box<dyn SharedLogger>> = vec![TermLogger::new(
-        log::LevelFilter::Debug,
-        simplelog::Config::default(),
-        simplelog::TerminalMode::Mixed,
-        simplelog::ColorChoice::Auto,
-    )];
+    let mut loggers: Vec<Box<dyn SharedLogger>> = vec![];
 
     if config.write_logs {
         loggers.push(WriteLogger::new(
@@ -88,9 +88,38 @@ pub fn init_log(config: &Logger) {
         ))
     }
 
+    if config.print_logs {
+        loggers.push(TermLogger::new(
+            log::LevelFilter::Debug,
+            simplelog::Config::default(),
+            simplelog::TerminalMode::Mixed,
+            simplelog::ColorChoice::Auto,
+        ))
+    }
+
     if config.enabled {
         CombinedLogger::init(loggers).expect("Error while initalizing logger!");
 
         log::info!("Logging enabled and initialized!")
     }
+}
+
+/// Initializes the sqlite database & applies migrations
+///
+/// # Examples:
+/// ```
+/// # use taskify::config::{Database, init_db};
+/// # #[tokio::test]
+/// # async fn test() -> Result<(), sea_orm::DbErr> {
+/// let config = Database { path: "taskify.db".into() };
+/// init_db(&config).await?;
+/// # Ok(())
+/// # }
+/// ```
+pub async fn init_db(config: &Database) -> Result<DatabaseConnection, DbErr> {
+    let db = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", config.path)).await?;
+
+    migration::Migrator::up(&db, None).await?;
+
+    Ok(db)
 }

@@ -1,0 +1,10 @@
+# The taskify configuration file 
+
+[database] 
+path = "./taskify.db" # The file to put the database in
+
+[logger]
+enabled = true # Is the logger enabled?
+write_logs = true # Write logs to config.log_path?
+print_logs = true # Print logs to terminal?
+log_path = "./taskify.log" # Where to save the logs if config.write_logs is enabled?
