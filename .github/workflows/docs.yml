@@ -1,0 +1,21 @@
+on:
+ workflow_dispatch:
+ pull_request:
+ push:
+   
+
+jobs:
+  release:
+    name: release ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Build docs
+        run: "cd ./taskify && cargo doc --no-deps && cd ./target/doc/"
+      - name: Create redirect index.html
+        run: "echo '<head><meta http-equiv=\"refresh\" content=\"0; url=/taskify/\"></head><p>Redirecting you to: /taskify. <a href=\"/taskify/\">Redirect manually</a><p>' > index.html"
+      - name: Prepare for upload
+        run: "cd .. && mv ./doc ./_site"
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
+        
