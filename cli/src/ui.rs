@@ -1,3 +1,5 @@
+//! This file contains all of the UI components
+
 use ratatui::{
     layout::Alignment,
     style::{Color, Modifier, Style},

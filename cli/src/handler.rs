@@ -1,3 +1,5 @@
+//! This file contains all of the handlers, i.e. key presses
+
 use crate::app::{App, AppResult};
 use crossterm::event::{KeyCode, KeyEvent};
 

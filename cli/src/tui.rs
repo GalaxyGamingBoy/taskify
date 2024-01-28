@@ -1,3 +1,5 @@
+//! This file contains the TUI Interface
+
 use crate::app::{App, AppResult};
 use crate::event::EventHandler;
 use crate::ui;
