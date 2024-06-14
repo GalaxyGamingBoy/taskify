@@ -6,7 +6,7 @@ use config::Config;
 
 pub mod config;
 
-/// Initializes Taskify by loading the config & any other necessary thing that is neeeded for startup
+/// Initializes Taskify by loading the config & any other necessary thing that is needed for startup
 ///
 /// # Examples
 /// ```
@@ -18,7 +18,7 @@ pub mod config;
 /// # }
 /// ```
 pub async fn init() -> Result<Config, Box<dyn std::error::Error>> {
-    let config = config::Config::load().expect("Error while loading config.toml");
+    let config = Config::load().expect("Error while loading config.toml");
     config::init_log(&config.logger);
     config::init_db(&config.database).await?;
 

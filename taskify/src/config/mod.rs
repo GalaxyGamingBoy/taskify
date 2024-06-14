@@ -10,10 +10,9 @@
 
 use std::fs::{self, File};
 
-use migration::MigratorTrait;
-use sea_orm::{DatabaseConnection, DbErr};
 use serde::Deserialize;
 use simplelog::{CombinedLogger, SharedLogger, TermLogger, WriteLogger};
+use sqlx::{SqliteConnection, Connection};
 
 /// The database configuration schema & structure.
 #[derive(Deserialize, Debug)]
@@ -46,7 +45,7 @@ pub struct Config {
 }
 
 impl Config {
-    /// Loads the config.toml and parses it into a [`crate::config::Config`]
+    /// Loads the config.toml and parses it into a [`Config`]
     ///
     /// # Examples:
     /// ```
@@ -66,13 +65,13 @@ impl Config {
     }
 }
 
-/// Initialized the logger using the [`crate::config::Logger`]
+/// Initialized the logger using the [`Logger`]
 ///
 /// # Examples:
 /// ```
 /// # use taskify::config::{init_log, Logger};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let logger_config = Logger { enabled: true, write_logs: true, log_path: "./taskify.log".into() };
+/// let logger_config = Logger { enabled: true, write_logs: true, log_path: "./taskify.log".into(), print_logs: false };
 /// init_log(&logger_config);
 /// # Ok(())
 /// # }
@@ -98,7 +97,7 @@ pub fn init_log(config: &Logger) {
     }
 
     if config.enabled {
-        CombinedLogger::init(loggers).expect("Error while initalizing logger!");
+        CombinedLogger::init(loggers).expect("Error while initializing logger!");
 
         log::info!("Logging enabled and initialized!")
     }
@@ -116,10 +115,9 @@ pub fn init_log(config: &Logger) {
 /// # Ok(())
 /// # }
 /// ```
-pub async fn init_db(config: &Database) -> Result<DatabaseConnection, DbErr> {
-    let db = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", config.path)).await?;
-
-    migration::Migrator::up(&db, None).await?;
+pub async fn init_db(config: &Database) -> Result<sqlx::SqliteConnection, sqlx::Error> {
+    let mut db = SqliteConnection::connect(&format!("sqlite://{}?mode=rwc", config.path)).await?;
+    sqlx::migrate!("./migrations/").run(&mut db).await?;
 
     Ok(db)
 }
