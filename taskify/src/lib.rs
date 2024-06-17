@@ -5,6 +5,7 @@
 use config::Config;
 
 pub mod config;
+pub mod db;
 
 /// Initializes Taskify by loading the config & any other necessary thing that is needed for startup
 ///

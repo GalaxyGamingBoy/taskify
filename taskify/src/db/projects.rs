@@ -1,0 +1,97 @@
+//! Project Database Entity
+//! This file contains the database entity for project.
+
+use chrono::{DateTime, Utc};
+use sea_query::enum_def;
+use uuid::Uuid;
+
+/// The database entity for project
+#[enum_def]
+pub struct Project {
+    id: Uuid,
+    name: String,
+    description: String,
+    created: DateTime<Utc>,
+    edited: DateTime<Utc>
+}
+
+impl Project {
+    /// New Project
+    ///
+    /// Create a new project entity with a default id, created and edited.
+    /// # Arguments:
+    /// * `name` - The project name
+    /// * `description` - The project description
+    pub fn new(name: String, description: String) -> Self {
+        Self {name, description, ..Default::default()}
+    }
+
+    /// ID Assignment
+    ///
+    /// Assigns a random uuid v4 id to the project.
+    pub fn assign_id(&mut self) -> &mut Self {
+        self.id = Uuid::new_v4();
+        self
+    }
+
+    /// Created Assignment
+    ///
+    /// Assigns the project `created` and `modified` field to the current datetime.
+    pub fn assign_created(&mut self) -> &mut Self {
+        self.created = Utc::now();
+        self.edited = self.created;
+        self
+    }
+
+    /// Set Id
+    ///
+    /// Sets the project id
+    /// # Arguments:
+    /// * `id` - The uuid v4 id to use
+    pub fn set_id(&mut self, id: Uuid) -> &mut Self {
+        self.id = id;
+        self
+    }
+
+    /// Set Name
+    ///
+    /// Sets the project display name
+    /// # Arguments
+    /// * `name` - The string display name to use
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+        self.edited();
+    }
+
+    /// Set Description
+    ///
+    /// Sets the project description
+    /// # Arguements
+    /// * `description` - The strign description to use
+    pub fn set_description(&mut self, description: String) {
+        self.description = description;
+        self.edited();
+    }
+
+    /// Set Edited
+    ///
+    /// Sets the project edited field to the current datetime
+    fn edited(&mut self) {
+        self.edited = Utc::now();
+    }
+
+    // Database Interactions
+
+    /// Insert Project to DB
+    pub fn insert(&mut self) {}
+
+    /// Update Project on DB
+    pub fn update(&mut self) {}
+
+    /// Find a Project on DB
+    ///
+    /// Finds a project in the DB by providing the id (uuid) value.
+    /// # Arguments
+    /// * `id` - The uuid v4 id to search for
+    pub fn find(id: Uuid) -> Self { Self::default() }
+}
