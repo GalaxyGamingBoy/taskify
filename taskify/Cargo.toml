@@ -15,5 +15,5 @@ tokio = { version = "1.35.1", features = ["full"] }
 toml = "0.8.8"
 sqlx = { version = "0.7.4", features = ["runtime-tokio", "uuid", "chrono", "sqlite"] }
 chrono = "0.4.38"
-sea-query = { version = "0.30.7", features = ["backend-sqlite", "derive", "attr", "chrono", "uuid"] }
+sea-query = { version = "0.30.7", features = ["backend-sqlite", "derive", "attr", "with-chrono", "with-uuid"] }
 uuid = { version = "1.8.0", features = ["v4"] }

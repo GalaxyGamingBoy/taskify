@@ -109,7 +109,7 @@ pub fn init_log(config: &Logger) {
 /// ```
 /// # use taskify::config::{Database, init_db};
 /// # #[tokio::test]
-/// # async fn test() -> Result<(), sea_orm::DbErr> {
+/// # async fn test() -> Result<(), sqlx::Error> {
 /// let config = Database { path: "taskify.db".into() };
 /// init_db(&config).await?;
 /// # Ok(())

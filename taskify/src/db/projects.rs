@@ -2,11 +2,12 @@
 //! This file contains the database entity for project.
 
 use chrono::{DateTime, Utc};
-use sea_query::enum_def;
+use sea_query::{enum_def, Query, SqliteQueryBuilder};
 use uuid::Uuid;
 
 /// The database entity for project
 #[enum_def]
+#[derive(Debug, Default, Clone)]
 pub struct Project {
     id: Uuid,
     name: String,
@@ -83,15 +84,45 @@ impl Project {
     // Database Interactions
 
     /// Insert Project to DB
-    pub fn insert(&mut self) {}
+    ///
+    /// # Examples
+    /// ```
+    /// # #[tokio::test]
+    /// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let config = taskify::init().await?;
+    /// taskify::db::projects::Project::new("Name".into(), "Desc".into()).insert();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn insert(&mut self) {
+        let query = Query::insert()
+            .into_table(ProjectIden::Table)
+            .columns([ProjectIden::Id, ProjectIden::Name, ProjectIden::Description, ProjectIden::Created, ProjectIden::Edited])
+            .values([self.id.into(), self.name.clone().into(), self.description.clone().into(), self.created.into(), self.edited.into()])
+            .unwrap().to_string(SqliteQueryBuilder);
+
+        log::info!("{:?}", query);
+    }
 
     /// Update Project on DB
     pub fn update(&mut self) {}
+
+    /// Delete Project on DB
+    pub fn delete(&mut self) {}
 
     /// Find a Project on DB
     ///
     /// Finds a project in the DB by providing the id (uuid) value.
     /// # Arguments
     /// * `id` - The uuid v4 id to search for
-    pub fn find(id: Uuid) -> Self { Self::default() }
+    pub fn find(id: Uuid) -> Self { Default::default() }
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn insert() {
+        crate::init().await.unwrap();
+        crate::db::projects::Project::new("Name".into(), "Desc".into());
+    }
 }
