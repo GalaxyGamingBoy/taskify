@@ -1,5 +1,5 @@
 //! Config Module
-//! This module handles all tasks related to the config, such us loading & providing the config schema or setting up the logger.
+//! This module handles all tasks related to the config, such us, loading & providing the config schema or setting up the logger.
 //!
 //! ```
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
