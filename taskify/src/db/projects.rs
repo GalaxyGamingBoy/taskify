@@ -2,7 +2,7 @@
 //! This file contains the database entity for taskify.
 
 use chrono::{DateTime, Utc};
-use sea_query::{enum_def, Query, SqliteQueryBuilder};
+use sea_query::{enum_def, Expr, Query, SqliteQueryBuilder};
 use sea_query_binder::{SqlxBinder, SqlxValues};
 use uuid::Uuid;
 
@@ -27,6 +27,21 @@ impl Project {
     /// * `description` - The project description
     pub fn new(name: String, description: String, author: String) -> Self {
         Self {name, description, author, ..Default::default()}
+    }
+
+    /// Get Project Name
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    /// Get Project Description
+    pub fn description(&self) -> &String {
+        &self.description
+    }
+
+    /// Get Project Author
+    pub fn author(&self) -> &String {
+        &self.author
     }
 
     /// ID Assignment
@@ -91,7 +106,7 @@ impl Project {
     /// ```
     /// # #[tokio::test]
     /// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
-    /// taskify::db::projects::Project::new("Name".into(), "Desc".into()).insert();
+    /// taskify::db::projects::Project::new("Name".into(), "Desc".into(), "Author".into()).insert();
     /// # Ok(())
     /// # }
     /// ```
@@ -104,7 +119,16 @@ impl Project {
     }
 
     /// Update Project on DB
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) -> (String, SqlxValues) {
+        Query::update()
+            .table(ProjectIden::Table)
+            .values([
+                (ProjectIden::Name, self.name.clone().into()),
+                (ProjectIden::Description, self.description.clone().into()),
+                (ProjectIden::Author, self.author.clone().into()),
+                (ProjectIden::Modified, self.modified.into())])
+            .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone())).build_sqlx(SqliteQueryBuilder)
+    }
 
     /// Delete Project on DB
     pub fn delete(&mut self) {}
@@ -119,14 +143,20 @@ impl Project {
 
 #[cfg(test)]
 mod tests {
-    #[tokio::test]
-    async fn insert() {
-        let mut config = crate::init().await.unwrap();
-        let project = crate::db::projects::Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into())
+    use super::Project;
+    #[test]
+    fn insert() {
+        let project = Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
             .insert();
 
-        sqlx::query_with(&project.0, project.1).execute(&mut config.1).await.unwrap();
+        assert_eq!(project.0, "INSERT INTO \"project\" (\"id\", \"name\", \"description\", \"author\", \"created\", \"modified\") VALUES (?, ?, ?, ?, ?, ?)");
+    }
 
-        assert_eq!(project.0, "INSERT INTO \"project\" (\"id\", \"name\", \"description\", \"created\", \"edited\") VALUES (?, ?, ?, ?, ?)");
+    #[test]
+    fn update() {
+        let project = Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
+            .update();
+
+        assert_eq!(project.0, "UPDATE \"project\" SET \"name\" = ?, \"description\" = ?, \"author\" = ?, \"modified\" = ? WHERE \"id\" = ?")
     }
 }
