@@ -1,19 +1,21 @@
 //! Project Database Entity
-//! This file contains the database entity for project.
+//! This file contains the database entity for taskify.
 
 use chrono::{DateTime, Utc};
 use sea_query::{enum_def, Query, SqliteQueryBuilder};
+use sea_query_binder::{SqlxBinder, SqlxValues};
 use uuid::Uuid;
 
-/// The database entity for project
+/// The database entity for taskify
 #[enum_def]
 #[derive(Debug, Default, Clone)]
 pub struct Project {
     id: Uuid,
     name: String,
     description: String,
+    author: String,
     created: DateTime<Utc>,
-    edited: DateTime<Utc>
+    modified: DateTime<Utc>
 }
 
 impl Project {
@@ -23,8 +25,8 @@ impl Project {
     /// # Arguments:
     /// * `name` - The project name
     /// * `description` - The project description
-    pub fn new(name: String, description: String) -> Self {
-        Self {name, description, ..Default::default()}
+    pub fn new(name: String, description: String, author: String) -> Self {
+        Self {name, description, author, ..Default::default()}
     }
 
     /// ID Assignment
@@ -40,7 +42,7 @@ impl Project {
     /// Assigns the project `created` and `modified` field to the current datetime.
     pub fn assign_created(&mut self) -> &mut Self {
         self.created = Utc::now();
-        self.edited = self.created;
+        self.modified = self.created;
         self
     }
 
@@ -67,7 +69,7 @@ impl Project {
     /// Set Description
     ///
     /// Sets the project description
-    /// # Arguements
+    /// # Arguments
     /// * `description` - The strign description to use
     pub fn set_description(&mut self, description: String) {
         self.description = description;
@@ -78,7 +80,7 @@ impl Project {
     ///
     /// Sets the project edited field to the current datetime
     fn edited(&mut self) {
-        self.edited = Utc::now();
+        self.modified = Utc::now();
     }
 
     // Database Interactions
@@ -89,19 +91,16 @@ impl Project {
     /// ```
     /// # #[tokio::test]
     /// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let config = taskify::init().await?;
     /// taskify::db::projects::Project::new("Name".into(), "Desc".into()).insert();
     /// # Ok(())
     /// # }
     /// ```
-    pub fn insert(&mut self) {
-        let query = Query::insert()
+    pub fn insert(&self) -> (String, SqlxValues) {
+        Query::insert()
             .into_table(ProjectIden::Table)
-            .columns([ProjectIden::Id, ProjectIden::Name, ProjectIden::Description, ProjectIden::Created, ProjectIden::Edited])
-            .values([self.id.into(), self.name.clone().into(), self.description.clone().into(), self.created.into(), self.edited.into()])
-            .unwrap().to_string(SqliteQueryBuilder);
-
-        log::info!("{:?}", query);
+            .columns([ProjectIden::Id, ProjectIden::Name, ProjectIden::Description, ProjectIden::Author, ProjectIden::Created, ProjectIden::Modified])
+            .values([self.id.into(), self.name.clone().into(), self.description.clone().into(), self.author.clone().into(), self.created.into(), self.modified.into()])
+            .unwrap().build_sqlx(SqliteQueryBuilder)
     }
 
     /// Update Project on DB
@@ -115,14 +114,19 @@ impl Project {
     /// Finds a project in the DB by providing the id (uuid) value.
     /// # Arguments
     /// * `id` - The uuid v4 id to search for
-    pub fn find(id: Uuid) -> Self { Default::default() }
+    pub fn find(_id: Uuid) -> Self { Default::default() }
 }
 
 #[cfg(test)]
 mod tests {
     #[tokio::test]
     async fn insert() {
-        crate::init().await.unwrap();
-        crate::db::projects::Project::new("Name".into(), "Desc".into());
+        let mut config = crate::init().await.unwrap();
+        let project = crate::db::projects::Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into())
+            .insert();
+
+        sqlx::query_with(&project.0, project.1).execute(&mut config.1).await.unwrap();
+
+        assert_eq!(project.0, "INSERT INTO \"project\" (\"id\", \"name\", \"description\", \"created\", \"edited\") VALUES (?, ?, ?, ?, ?)");
     }
 }

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS projects (
+CREATE TABLE IF NOT EXISTS project (
     id VARCHAR(36) UNIQUE NOT NULL PRIMARY KEY,
     name VARCHAR(32),
     description TEXT,
