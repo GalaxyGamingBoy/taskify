@@ -4,11 +4,12 @@
 use chrono::{DateTime, Utc};
 use sea_query::{enum_def, Expr, Query, SqliteQueryBuilder};
 use sea_query_binder::{SqlxBinder, SqlxValues};
+use sqlx::{FromRow, Sqlite, SqliteConnection};
 use uuid::Uuid;
 
 /// The database entity for taskify
 #[enum_def]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, FromRow)]
 pub struct Project {
     id: Uuid,
     name: String,
@@ -27,6 +28,17 @@ impl Project {
     /// * `description` - The project description
     pub fn new(name: String, description: String, author: String) -> Self {
         Self {name, description, author, ..Default::default()}
+    }
+
+    /// Load a project from the DB
+    ///
+    /// Finds a project in the DB by providing the id (uuid) value and wraps it in a Project{} struct.
+    /// # Arguments
+    /// * `id` - The uuid v4 id to search for
+    pub async fn from_db(id: Uuid, conn: &SqliteConnection) -> Self {
+        let query = Project::query(id);
+
+        sqlx::query_as_with::<_, Project, _>(&query.0, query.1).fetch_one(conn).await.unwrap()
     }
 
     /// Get Project Name
@@ -85,7 +97,7 @@ impl Project {
     ///
     /// Sets the project description
     /// # Arguments
-    /// * `description` - The strign description to use
+    /// * `description` - The string description to use
     pub fn set_description(&mut self, description: String) {
         self.description = description;
         self.edited();
@@ -131,32 +143,78 @@ impl Project {
     }
 
     /// Delete Project on DB
-    pub fn delete(&mut self) {}
+    pub fn delete(&mut self) -> (String, SqlxValues) {
+        Query::delete()
+            .from_table(ProjectIden::Table)
+            .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone())).build_sqlx(SqliteQueryBuilder)
+    }
 
     /// Find a Project on DB
     ///
     /// Finds a project in the DB by providing the id (uuid) value.
     /// # Arguments
     /// * `id` - The uuid v4 id to search for
-    pub fn find(_id: Uuid) -> Self { Default::default() }
+    pub fn query(id: Uuid) -> (String, SqlxValues) {
+        Query::select()
+            .columns([
+                ProjectIden::Name,
+                ProjectIden::Description,
+                ProjectIden::Author,
+                ProjectIden::Created,
+                ProjectIden::Modified
+            ])
+            .from(ProjectIden::Table)
+            .and_where(Expr::col(ProjectIden::Id).eq(id))
+            .limit(1)
+            .build_sqlx(SqliteQueryBuilder)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
     use super::Project;
+    fn create_project() -> Project {
+        Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
+    }
+
     #[test]
     fn insert() {
-        let project = Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
-            .insert();
+        let query = create_project().insert();
 
-        assert_eq!(project.0, "INSERT INTO \"project\" (\"id\", \"name\", \"description\", \"author\", \"created\", \"modified\") VALUES (?, ?, ?, ?, ?, ?)");
+        assert_eq!(query.0, "INSERT INTO \"project\" (\"id\", \"name\", \"description\", \"author\", \"created\", \"modified\") VALUES (?, ?, ?, ?, ?, ?)");
     }
 
     #[test]
     fn update() {
-        let project = Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
-            .update();
+        let query = create_project().update();
 
-        assert_eq!(project.0, "UPDATE \"project\" SET \"name\" = ?, \"description\" = ?, \"author\" = ?, \"modified\" = ? WHERE \"id\" = ?")
+        assert_eq!(query.0, "UPDATE \"project\" SET \"name\" = ?, \"description\" = ?, \"author\" = ?, \"modified\" = ? WHERE \"id\" = ?")
     }
+
+    #[test]
+    fn delete() {
+        let query = create_project().delete();
+
+        assert_eq!(query.0, "DELETE FROM \"project\" WHERE \"id\" = ?");
+    }
+
+    #[test]
+    fn query() {
+        let query = Project::query(Uuid::default());
+
+        assert_eq!(query.0, "SELECT \"name\", \"description\", \"author\", \"created\", \"modified\" FROM \"project\" WHERE \"id\" = ? LIMIT ?")
+    }
+
+    #[tokio::test]
+    async fn insert_db() {}
+
+    #[tokio::test]
+    async fn update_db() {}
+
+    #[tokio::test]
+    async fn delete_db() {}
+
+    #[tokio::test]
+    async fn query_db() {}
 }

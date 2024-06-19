@@ -115,8 +115,26 @@ pub fn init_log(config: &Logger) {
 /// # Ok(())
 /// # }
 /// ```
-pub async fn init_db(config: &Database) -> Result<sqlx::SqliteConnection, sqlx::Error> {
+pub async fn init_db(config: &Database) -> Result<SqliteConnection, sqlx::Error> {
     let mut db = SqliteConnection::connect(&format!("sqlite://{}?mode=rwc", config.path)).await?;
+    sqlx::migrate!("./migrations/").run(&mut db).await?;
+
+    Ok(db)
+}
+
+/// Initializes an in-memory sqlite database & applies migrations.
+///
+/// # Examples:
+/// ```
+/// # use taskify::config::{Database, init_memory_db};
+/// # #[tokio::test]
+/// # async fn test() -> Result<(), sqlx::Error> {
+/// init_memory_db().await?;
+/// # Ok(())
+/// # }
+/// ```
+pub async fn init_memory_db() -> Result<SqliteConnection, sqlx::Error> {
+    let mut db = SqliteConnection::connect("sqlite://:memory:").await?;
     sqlx::migrate!("./migrations/").run(&mut db).await?;
 
     Ok(db)
