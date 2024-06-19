@@ -4,12 +4,13 @@
 use chrono::{DateTime, Utc};
 use sea_query::{enum_def, Expr, Query, SqliteQueryBuilder};
 use sea_query_binder::{SqlxBinder, SqlxValues};
-use sqlx::{FromRow, Sqlite, SqliteConnection};
+use sqlx::{Error, FromRow, SqliteConnection};
+use sqlx::sqlite::SqliteQueryResult;
 use uuid::Uuid;
 
 /// The database entity for taskify
 #[enum_def]
-#[derive(Debug, Default, Clone, FromRow)]
+#[derive(Debug, Default, Clone, PartialEq, FromRow)]
 pub struct Project {
     id: Uuid,
     name: String,
@@ -35,10 +36,11 @@ impl Project {
     /// Finds a project in the DB by providing the id (uuid) value and wraps it in a Project{} struct.
     /// # Arguments
     /// * `id` - The uuid v4 id to search for
-    pub async fn from_db(id: Uuid, conn: &SqliteConnection) -> Self {
-        let query = Project::query(id);
+    /// * `conn` - The SQLite database connection
+    pub async fn from_db(id: Uuid, conn: &mut SqliteConnection) -> Result<Self, Error> {
+        let query = Project::select_query(id);
 
-        sqlx::query_as_with::<_, Project, _>(&query.0, query.1).fetch_one(conn).await.unwrap()
+         sqlx::query_as_with::<_, Project, _>(&query.0, query.1).fetch_one(conn).await
     }
 
     /// Get Project Name
@@ -103,26 +105,29 @@ impl Project {
         self.edited();
     }
 
-    /// Set Edited
-    ///
-    /// Sets the project edited field to the current datetime
-    fn edited(&mut self) {
-        self.modified = Utc::now();
-    }
-
     // Database Interactions
 
-    /// Insert Project to DB
+    /// Inserts Project to DB
+    ///
+    /// # Arguments
+    /// * `conn` - The SQLite database connection
+    pub async fn insert(&self, conn: &mut SqliteConnection) -> Result<SqliteQueryResult, Error> {
+        let query = self.insert_query();
+
+        sqlx::query_with(&query.0, query.1).execute(conn).await
+    }
+
+    /// Generates a sqlx query to Insert Project to DB
     ///
     /// # Examples
     /// ```
     /// # #[tokio::test]
     /// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
-    /// taskify::db::projects::Project::new("Name".into(), "Desc".into(), "Author".into()).insert();
+    /// taskify::db::projects::Project::new("Name".into(), "Desc".into(), "Author".into()).insert_query();
     /// # Ok(())
     /// # }
     /// ```
-    pub fn insert(&self) -> (String, SqlxValues) {
+    pub fn insert_query(&self) -> (String, SqlxValues) {
         Query::insert()
             .into_table(ProjectIden::Table)
             .columns([ProjectIden::Id, ProjectIden::Name, ProjectIden::Description, ProjectIden::Author, ProjectIden::Created, ProjectIden::Modified])
@@ -130,8 +135,27 @@ impl Project {
             .unwrap().build_sqlx(SqliteQueryBuilder)
     }
 
-    /// Update Project on DB
-    pub fn update(&mut self) -> (String, SqlxValues) {
+    /// Updates a Project on DB
+    ///
+    /// # Arguments
+    /// * `conn` - The SQLite database connection
+    pub async fn update(&self, conn: &mut SqliteConnection) -> Result<SqliteQueryResult, Error> {
+        let query = self.update_query();
+
+        sqlx::query_with(&query.0, query.1).execute(conn).await
+    }
+
+    /// Generates a sqlx query to Update Project on DB
+    ///
+    /// # Examples
+    /// ```
+    /// # #[tokio::test]
+    /// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// taskify::db::projects::Project::new("Name".into(), "Desc".into(), "Author".into()).update_query();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn update_query(&self) -> (String, SqlxValues) {
         Query::update()
             .table(ProjectIden::Table)
             .values([
@@ -142,21 +166,41 @@ impl Project {
             .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone())).build_sqlx(SqliteQueryBuilder)
     }
 
-    /// Delete Project on DB
-    pub fn delete(&mut self) -> (String, SqlxValues) {
+    /// Deletes a Project on DB
+    ///
+    /// # Arguments
+    /// * `conn` - The SQLite database connection
+    pub async fn delete(&self, conn: &mut SqliteConnection) ->Result<SqliteQueryResult, Error> {
+        let query = self.delete_query();
+
+        sqlx::query_with(&query.0, query.1).execute(conn).await
+    }
+
+    /// Generates a sqlx query to Delete Project on DB
+    ///
+    /// # Examples
+    /// ```
+    /// # #[tokio::test]
+    /// # async fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// taskify::db::projects::Project::new("Name".into(), "Desc".into(), "Author".into()).delete_query();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn delete_query(&self) -> (String, SqlxValues) {
         Query::delete()
             .from_table(ProjectIden::Table)
             .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone())).build_sqlx(SqliteQueryBuilder)
     }
 
-    /// Find a Project on DB
+    /// Generates a sqlx query to Find a Project on DB
     ///
     /// Finds a project in the DB by providing the id (uuid) value.
     /// # Arguments
     /// * `id` - The uuid v4 id to search for
-    pub fn query(id: Uuid) -> (String, SqlxValues) {
+    pub fn select_query(id: Uuid) -> (String, SqlxValues) {
         Query::select()
             .columns([
+                ProjectIden::Id,
                 ProjectIden::Name,
                 ProjectIden::Description,
                 ProjectIden::Author,
@@ -168,11 +212,22 @@ impl Project {
             .limit(1)
             .build_sqlx(SqliteQueryBuilder)
     }
+
+    // Private Functions
+
+    /// Set Edited
+    ///
+    /// Sets the project edited field to the current datetime
+    fn edited(&mut self) {
+        self.modified = Utc::now();
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use sqlx::Error;
     use uuid::Uuid;
+    use crate::config::init_memory_db;
     use super::Project;
     fn create_project() -> Project {
         Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
@@ -180,41 +235,92 @@ mod tests {
 
     #[test]
     fn insert() {
-        let query = create_project().insert();
+        let query = create_project().insert_query();
 
         assert_eq!(query.0, "INSERT INTO \"project\" (\"id\", \"name\", \"description\", \"author\", \"created\", \"modified\") VALUES (?, ?, ?, ?, ?, ?)");
     }
 
     #[test]
     fn update() {
-        let query = create_project().update();
+        let query = create_project().update_query();
 
         assert_eq!(query.0, "UPDATE \"project\" SET \"name\" = ?, \"description\" = ?, \"author\" = ?, \"modified\" = ? WHERE \"id\" = ?")
     }
 
     #[test]
     fn delete() {
-        let query = create_project().delete();
+        let query = create_project().delete_query();
 
         assert_eq!(query.0, "DELETE FROM \"project\" WHERE \"id\" = ?");
     }
 
     #[test]
     fn query() {
-        let query = Project::query(Uuid::default());
+        let query = Project::select_query(Uuid::default());
 
         assert_eq!(query.0, "SELECT \"name\", \"description\", \"author\", \"created\", \"modified\" FROM \"project\" WHERE \"id\" = ? LIMIT ?")
     }
 
     #[tokio::test]
-    async fn insert_db() {}
+    async fn insert_db() {
+        let query = create_project()
+            .insert(&mut init_memory_db().await.unwrap())
+            .await.unwrap();
+
+        assert_eq!(query.rows_affected(), 1);
+        assert_eq!(query.last_insert_rowid(), 1);
+    }
 
     #[tokio::test]
-    async fn update_db() {}
+    async fn update_db() {
+        let mut conn = init_memory_db().await.unwrap();
+        let project = create_project();
+
+        let query = project.update(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 0);
+        assert_eq!(query.last_insert_rowid(), 1);
+
+        let query = project.insert(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 1);
+        assert_eq!(query.last_insert_rowid(), 1);
+
+        let query = project.update(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 1);
+        assert_eq!(query.last_insert_rowid(), 1)
+    }
 
     #[tokio::test]
-    async fn delete_db() {}
+    async fn delete_db() {
+        let mut conn = init_memory_db().await.unwrap();
+        let project = create_project();
+
+        let query = project.delete(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 0);
+        assert_eq!(query.last_insert_rowid(), 1);
+
+        let query = project.insert(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 1);
+        assert_eq!(query.last_insert_rowid(), 1);
+
+        let query = project.delete(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 1);
+        assert_eq!(query.last_insert_rowid(), 1)
+    }
 
     #[tokio::test]
-    async fn query_db() {}
+    async fn query_db() {
+        let mut conn = init_memory_db().await.unwrap();
+        let mut project = create_project();
+        project.assign_id().assign_created();
+
+        let query = Project::from_db(project.id, &mut conn).await;
+        assert_eq!(query.unwrap_err().to_string(), Error::RowNotFound.to_string());
+
+        let query = project.insert(&mut conn).await.unwrap();
+        assert_eq!(query.rows_affected(), 1);
+        assert_eq!(query.last_insert_rowid(), 1);
+
+        let query = Project::from_db(project.id, &mut conn).await.unwrap();
+        assert_eq!(project, query);
+    }
 }
