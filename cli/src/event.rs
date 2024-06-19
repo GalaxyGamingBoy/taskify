@@ -1,4 +1,4 @@
-//! This file contains all of the event logic
+//! This file contains all the event logic
 use std::time::Duration;
 
 use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};

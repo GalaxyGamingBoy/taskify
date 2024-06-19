@@ -15,7 +15,6 @@ async fn main() -> AppResult<()> {
     let events = EventHandler::new(250);
     let mut tui = Tui::new(terminal, events);
 
-    taskify::init().await?;
     tui.init()?;
 
     while app.running {
