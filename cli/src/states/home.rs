@@ -2,25 +2,19 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Color, Modifier, Span, Style};
 use ratatui::widgets::{Block, Borders, BorderType, Paragraph, Widget};
-use crate::keybindings::Keybinding;
-use crate::states::{Keybindings, State};
+use crate::keybindings::{Keybinding, Keybindings};
+use crate::states::AppState;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Home {}
 
 impl Keybindings for Home {
-    fn keybindings() -> Vec<Keybinding> {
-        vec![Keybinding { key: '?', name: "Help".into(), action: || {} }]
+    fn keybindings() -> Vec<Box<Keybinding>> {
+        vec![Keybinding { key: '?', name: "Help".into() }.into()]
     }
 }
 
-impl State for Home {}
-
-impl ToString for Home {
-    fn to_string(&self) -> String {
-        String::from("home")
-    }
-}
+impl AppState for Home {}
 
 impl Widget for Home {
     fn render(self, area: Rect, buf: &mut Buffer) {

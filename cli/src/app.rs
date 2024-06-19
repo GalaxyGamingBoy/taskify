@@ -2,26 +2,26 @@
 
 use std::error;
 use ratatui::widgets::Widget;
-use crate::states::{AppStates, State};
+use crate::keybindings::Keybindings;
+use crate::states::{AppState, AppStates};
+use crate::states::home::Home;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 #[derive(Debug)]
-pub struct App<T> where T: State + Widget {
+pub struct App {
     pub running: bool,
-    pub state: AppStates<T>
+    pub state: AppStates
 }
 
-impl<T> Default for App<T> where T: State + Widget {
-    fn default() -> Self {
-        Self { running: true, state: Default::default() }
-    }
-}
+impl App{
 
-impl<T> App<T> where T: State + Widget {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            state: AppStates::Home(Home {}),
+            running: true
+        }
     }
 
     pub fn tick(&self) {}

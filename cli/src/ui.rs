@@ -6,11 +6,9 @@ use ratatui::{
 use ratatui::widgets::Widget;
 
 use crate::app::App;
-use crate::states::{AppStates, State};
+use crate::keybindings::Keybindings;
+use crate::states::{AppState};
 
-pub fn render(app: &mut App<impl State + Widget + ToString>, frame: &mut Frame){
-    match app.state.to_string() {
-        "home" => frame.render_widget(app.state, frame.size()),
-        _ => {}
-    }
+pub fn render (app: &mut App, frame: &mut Frame) {
+    frame.render_widget(app.state.clone(), frame.size());
 }

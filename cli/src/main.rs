@@ -5,6 +5,7 @@ use cli::tui::Tui;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
+use cli::states::home::Home;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {

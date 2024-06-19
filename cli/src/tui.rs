@@ -9,6 +9,9 @@ use ratatui::backend::Backend;
 use ratatui::Terminal;
 use std::io;
 use std::panic;
+use ratatui::widgets::Widget;
+use crate::keybindings::Keybindings;
+use crate::states::AppState;
 
 /// Representation of a terminal user interface.
 ///
