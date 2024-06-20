@@ -1,3 +1,5 @@
+//! This file contains the logic for the home state
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Color, Modifier, Span, Style};
@@ -10,6 +12,10 @@ use crate::states::{AppState, RenderState};
 pub struct Home {}
 
 impl AppState for Home {
+    fn display_name(&self) -> &str {
+        "HOME"
+    }
+
     fn action(&mut self, action: Action) {
         match action {
             Action::Escape => {},
