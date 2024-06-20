@@ -2,22 +2,30 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Color, Modifier, Span, Style};
 use ratatui::widgets::{Block, Borders, BorderType, Paragraph, Widget};
+use crate::actions::Action;
 use crate::keybindings::{Keybinding, Keybindings};
-use crate::states::AppState;
+use crate::states::{AppState, RenderState};
 
 #[derive(Debug, Default, Clone)]
 pub struct Home {}
 
-impl Keybindings for Home {
-    fn keybindings() -> Vec<Box<Keybinding>> {
-        vec![Keybinding { key: '?', name: "Help".into() }.into()]
+impl AppState for Home {
+    fn action(&mut self, action: Action) {
+        match action {
+            Action::Escape => {},
+            Action::ShowHelp => {}
+        }
     }
 }
 
-impl AppState for Home {}
+impl Keybindings for Home {
+    fn keybindings(&self) -> Vec<Keybinding> {
+        vec![Keybinding { key: '?', name: "Help".into(), action: Action::ShowHelp}]
+    }
+}
 
-impl Widget for Home {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl RenderState for Home {
+    fn render(&self, area: Rect, buf: &mut Buffer) {
         Paragraph::new(vec![
             "".into(),
             vec![

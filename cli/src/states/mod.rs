@@ -1,12 +1,17 @@
+#![allow(unused_variables)]
 
-use ratatui::widgets::Widget;
-use crate::states::home::Home;
+use std::fmt::Debug;
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+use crate::actions::Action;
+use crate::keybindings::Keybindings;
 
 pub mod home;
 
-pub trait AppState {}
+pub trait RenderState {
+    fn render(&self, area: Rect, buf: &mut Buffer) {}
+}
 
-#[derive(Debug, Clone)]
-pub enum AppStates {
-    Home(Home)
+pub trait AppState: Keybindings + RenderState + Debug {
+    fn action(&mut self, action: Action) {}
 }

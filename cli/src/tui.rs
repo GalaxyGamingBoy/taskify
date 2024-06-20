@@ -9,9 +9,6 @@ use ratatui::backend::Backend;
 use ratatui::Terminal;
 use std::io;
 use std::panic;
-use ratatui::widgets::Widget;
-use crate::keybindings::Keybindings;
-use crate::states::AppState;
 
 /// Representation of a terminal user interface.
 ///
@@ -53,7 +50,7 @@ impl<B: Backend> Tui<B> {
 
     /// [`Draw`] the terminal interface by [`rendering`] the widgets.
     ///
-    /// [`Draw`]: ratatui::Terminal::draw
+    /// [`Draw`]: Terminal::draw
     /// [`rendering`]: crate::ui:render
     pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
         self.terminal.draw(|frame| ui::render(app, frame))?;

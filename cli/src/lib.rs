@@ -5,3 +5,4 @@ pub mod tui;
 pub mod ui;
 pub mod states;
 pub mod keybindings;
+pub mod actions;

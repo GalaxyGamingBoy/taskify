@@ -1,27 +1,28 @@
 //! This file contains the application log
 
 use std::error;
-use ratatui::widgets::Widget;
-use crate::keybindings::Keybindings;
-use crate::states::{AppState, AppStates};
+use crate::states::{AppState};
 use crate::states::home::Home;
 
 /// Application result type.
-pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type AppResult<T> = Result<T, Box<dyn error::Error>>;
 
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
-    pub state: AppStates
+    pub state: Box<dyn AppState>
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {running: true, state: Box::new(Home::default())}
+    }
 }
 
 impl App{
 
     pub fn new() -> Self {
-        Self {
-            state: AppStates::Home(Home {}),
-            running: true
-        }
+        Default::default()
     }
 
     pub fn tick(&self) {}

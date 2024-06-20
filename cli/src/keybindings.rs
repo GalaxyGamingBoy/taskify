@@ -1,13 +1,11 @@
-use ratatui::widgets::Widget;
-use crate::app::App;
-use crate::states::{AppState};
+use crate::actions::Action;
 
 pub trait Keybindings {
-    fn keybindings() -> Vec<Box<Keybinding>> { vec![] }
+    fn keybindings(&self) -> Vec<Keybinding> { vec![] }
 }
 
 pub struct Keybinding {
     pub key: char,
     pub name: String,
-    // pub action: Fn()
+    pub action: Action
 }
