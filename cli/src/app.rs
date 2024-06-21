@@ -1,10 +1,9 @@
 //! This file contains the application log
 
 use std::error;
-use std::rc::Rc;
-use crate::actions;
-use crate::states::{AppState};
+use crate::states::{AppState, AppStates};
 use crate::states::home::Home;
+use crate::states::project::Project;
 
 /// Application result type.
 pub type AppResult<T> = Result<T, Box<dyn error::Error>>;
@@ -28,9 +27,13 @@ impl App {
     }
 
     pub fn tick(&mut self) {
-        match self.state.tick() {
-            actions::Event::Goto(v) => self.state = v,
-            _ => {}
+        self.state.tick()
+    }
+
+    pub fn set_state(&mut self, event: AppStates) {
+        match event {
+            AppStates::Home => self.state = Box::new(Home::default()),
+            AppStates::Project => self.state = Box::new(Project::default())
         }
     }
 

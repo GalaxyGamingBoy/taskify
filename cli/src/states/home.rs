@@ -1,18 +1,14 @@
 //! This file contains the logic for the home state
 
-use std::rc::Rc;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Color, Modifier, Span, Style};
 use ratatui::widgets::{Block, Borders, BorderType, Paragraph, Widget};
-use tokio::sync::mpsc;
 use crate::actions::{Action, Event};
-use crate::app::App;
 use crate::keybindings::{Keybinding, Keybindings};
-use crate::states::{AppState, RenderState};
-use crate::states::project::Project;
+use crate::states::{AppState, AppStates, RenderState};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Home {}
 
 impl AppState for Home {
@@ -20,11 +16,11 @@ impl AppState for Home {
         "HOME"
     }
 
-    fn action(&mut self, action: Action) {
+    fn action(&mut self, action: Action) -> Event {
         match action {
-            Action::Escape => {},
-            Action::Home_GotoProjects => {},
-            _ => {}
+            Action::Escape => Event::None,
+            Action::HomeGotoProjects => Event::Goto(AppStates::Project),
+            _ => Event::None
         }
     }
 
@@ -32,7 +28,7 @@ impl AppState for Home {
 }
 impl Keybindings for Home {
     fn keybindings(&self) -> Vec<Keybinding> {
-        vec![Keybinding { key: 'p', name: "View Projects".into(), action: Action::Home_GotoProjects}]
+        vec![Keybinding { key: 'p', name: "View Projects".into(), action: Action::HomeGotoProjects}]
     }
 }
 

@@ -7,7 +7,7 @@ use crate::actions::{Action, Event};
 use crate::keybindings::Keybindings;
 
 pub mod home;
-mod project;
+pub mod project;
 
 #[allow(unused_variables)]
 pub trait RenderState {
@@ -17,6 +17,13 @@ pub trait RenderState {
 #[allow(unused_variables)]
 pub trait AppState: Keybindings + RenderState + Debug {
     fn display_name(&self) -> &str { "APP_STATE" }
-    fn action(&mut self, action: Action) { todo!() }
-    fn tick(&mut self) -> Event { todo!() }
+    fn action(&mut self, action: Action) -> Event { Event::None }
+    fn tick(&mut self) { }
+}
+
+#[derive(Clone, Copy, Default, Debug)]
+pub enum AppStates {
+    #[default]
+    Home,
+    Project
 }

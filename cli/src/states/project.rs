@@ -1,12 +1,10 @@
-use std::rc::Rc;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use crate::actions::{Action, Event};
-use crate::app::App;
 use crate::keybindings::{Keybinding, Keybindings};
 use crate::states::{AppState, RenderState};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct Project {}
 
 impl AppState for Project {
@@ -14,25 +12,21 @@ impl AppState for Project {
         "PROJECTS"
     }
 
-    fn action(&mut self, action: Action) {
+    fn action(&mut self, action: Action) -> Event {
         match action {
-            _ => {}
+            _ => Event::None
         }
     }
 
-    fn tick(&mut self) -> Rc<Event> {
-        Rc::new(Event::None)
-    }
+    fn tick(&mut self) {}
 }
 
 impl Keybindings for Project {
     fn keybindings(&self) -> Vec<Keybinding> {
-        todo!()
+        vec![]
     }
 }
 
 impl RenderState for Project {
-    fn render(&self, area: Rect, buf: &mut Buffer) {
-        todo!()
-    }
+    fn render(&self, area: Rect, buf: &mut Buffer) {}
 }

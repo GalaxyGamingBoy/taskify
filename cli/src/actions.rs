@@ -1,16 +1,16 @@
-use crate::states::AppState;
+use crate::states::{AppStates};
 
 #[derive(Debug, Copy, Clone, Default)]
 pub enum Action {
-    Home_GotoProjects,
-    Escape,
     #[default]
-    None
+    None,
+    Escape,
+    HomeGotoProjects,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone)]
 pub enum Event {
     #[default]
     None,
-    Goto(dyn AppState)
+    Goto(AppStates)
 }
