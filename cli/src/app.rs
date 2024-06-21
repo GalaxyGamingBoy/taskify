@@ -1,6 +1,8 @@
 //! This file contains the application log
 
 use std::error;
+use std::rc::Rc;
+use crate::actions;
 use crate::states::{AppState};
 use crate::states::home::Home;
 
@@ -19,13 +21,18 @@ impl Default for App {
     }
 }
 
-impl App{
+impl App {
 
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn tick(&self) {}
+    pub fn tick(&mut self) {
+        match self.state.tick() {
+            actions::Event::Goto(v) => self.state = v,
+            _ => {}
+        }
+    }
 
     pub fn quit(&mut self) {
         self.running = false;
