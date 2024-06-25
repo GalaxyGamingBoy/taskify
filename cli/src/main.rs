@@ -8,14 +8,14 @@ use std::io;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    let mut app = App::new();
+    let mut app = App::new().await;
 
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
     let events = EventHandler::new(250);
     let mut tui = Tui::new(terminal, events);
 
-    tui.init()?;
+    let _ = tui.init();
 
     while app.running {
         tui.draw(&mut app)?;

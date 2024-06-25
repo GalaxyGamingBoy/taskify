@@ -178,8 +178,10 @@ dependencies = [
  "crossterm",
  "futures",
  "ratatui",
+ "sqlx",
  "taskify",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

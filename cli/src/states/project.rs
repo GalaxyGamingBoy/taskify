@@ -1,24 +1,35 @@
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
 use crate::actions::{Action, Event};
 use crate::keybindings::{Keybinding, Keybindings};
 use crate::states::{AppState, RenderState};
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+use sqlx::SqliteConnection;
+use taskify::db::projects::Project as DBProject;
 
 #[derive(Debug, Default)]
-pub struct Project {}
+pub struct Project {
+    projects: Vec<DBProject>,
+    db_page: u64,
+}
 
 impl AppState for Project {
     fn display_name(&self) -> &str {
         "PROJECTS"
     }
 
-    fn action(&mut self, action: Action) -> Event {
-        match action {
-            _ => Event::None
-        }
+    async fn init(&mut self, exec: &SqliteConnection) {
+        self.projects = DBProject::from_list_db(self.db_page, 12, exec)
+            .await
+            .unwrap()
     }
 
-    fn tick(&mut self) {}
+    async fn tick(&mut self, exec: &SqliteConnection) {}
+
+    fn action(&mut self, action: Action) -> Event {
+        match action {
+            _ => Event::None,
+        }
+    }
 }
 
 impl Keybindings for Project {

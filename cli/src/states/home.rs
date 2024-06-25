@@ -1,12 +1,13 @@
 //! This file contains the logic for the home state
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Rect};
-use ratatui::prelude::{Color, Modifier, Span, Style};
-use ratatui::widgets::{Block, Borders, BorderType, Paragraph, Widget};
 use crate::actions::{Action, Event};
 use crate::keybindings::{Keybinding, Keybindings};
 use crate::states::{AppState, AppStates, RenderState};
+use ratatui::buffer::Buffer;
+use ratatui::layout::{Alignment, Rect};
+use ratatui::prelude::{Color, Modifier, Span, Style};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
+use sqlx::SqliteConnection;
 
 #[derive(Debug, Default)]
 pub struct Home {}
@@ -16,19 +17,25 @@ impl AppState for Home {
         "HOME"
     }
 
+    async fn init(&mut self, exec: &SqliteConnection) {}
+
+    async fn tick(&mut self, exec: &SqliteConnection) {}
+
     fn action(&mut self, action: Action) -> Event {
         match action {
             Action::Escape => Event::None,
             Action::HomeGotoProjects => Event::Goto(AppStates::Project),
-            _ => Event::None
+            _ => Event::None,
         }
     }
-
-    fn tick(&mut self)  {}
 }
 impl Keybindings for Home {
     fn keybindings(&self) -> Vec<Keybinding> {
-        vec![Keybinding { key: 'p', name: "View Projects".into(), action: Action::HomeGotoProjects}]
+        vec![Keybinding {
+            key: 'p',
+            name: "View Projects".into(),
+            action: Action::HomeGotoProjects,
+        }]
     }
 }
 
@@ -43,7 +50,7 @@ impl RenderState for Home {
                     Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
                 ),
             ]
-                .into(),
+            .into(),
             vec![
                 "The ".into(),
                 Span::styled(
@@ -53,22 +60,23 @@ impl RenderState for Home {
                 ),
                 " way to handle tasks, time manage and be productive!".into(),
             ]
-                .into(),
+            .into(),
             "".into(),
             Span::styled(
                 "Press q to exit at any time",
                 Style::default().add_modifier(Modifier::ITALIC),
             )
-                .into(),
+            .into(),
         ])
-            .block(
-                Block::default()
-                    .title(" [Taskify CLI] ")
-                    .title_alignment(Alignment::Center)
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain),
-            )
-            .style(Style::default().fg(Color::White))
-            .alignment(Alignment::Center).render(area, buf)
+        .block(
+            Block::default()
+                .title(" [Taskify CLI] ")
+                .title_alignment(Alignment::Center)
+                .borders(Borders::ALL)
+                .border_type(BorderType::Plain),
+        )
+        .style(Style::default().fg(Color::White))
+        .alignment(Alignment::Center)
+        .render(area, buf)
     }
 }

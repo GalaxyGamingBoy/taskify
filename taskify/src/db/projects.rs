@@ -4,8 +4,8 @@
 use chrono::{DateTime, Utc};
 use sea_query::{enum_def, Expr, Query, SqliteQueryBuilder};
 use sea_query_binder::{SqlxBinder, SqlxValues};
-use sqlx::{Error, FromRow, SqliteConnection};
 use sqlx::sqlite::SqliteQueryResult;
+use sqlx::{Error, FromRow, SqliteConnection};
 use uuid::Uuid;
 
 /// The database entity for taskify
@@ -17,7 +17,7 @@ pub struct Project {
     description: String,
     author: String,
     created: DateTime<Utc>,
-    modified: DateTime<Utc>
+    modified: DateTime<Utc>,
 }
 
 impl Project {
@@ -28,7 +28,12 @@ impl Project {
     /// * `name` - The project name
     /// * `description` - The project description
     pub fn new(name: String, description: String, author: String) -> Self {
-        Self {name, description, author, ..Default::default()}
+        Self {
+            name,
+            description,
+            author,
+            ..Default::default()
+        }
     }
 
     /// Load a project from the DB
@@ -40,7 +45,27 @@ impl Project {
     pub async fn from_db(id: Uuid, conn: &mut SqliteConnection) -> Result<Self, Error> {
         let query = Project::select_query(id);
 
-         sqlx::query_as_with::<_, Project, _>(&query.0, query.1).fetch_one(conn).await
+        sqlx::query_as_with::<_, Project, _>(&query.0, query.1)
+            .fetch_one(conn)
+            .await
+    }
+
+    /// Generates a sqlx query to List all Projects in the DB
+    ///
+    /// Lists all projects in the DB by providing a page and limit count.
+    /// # Arguements
+    /// * `page` - The query page
+    /// * `limit` - The row per page
+    /// * `conn` - The SQLite database connection
+    pub async fn from_list_db(
+        page: u64,
+        limit: u64,
+        conn: &mut SqliteConnection,
+    ) -> Result<Vec<Project>, Error> {
+        let query = Project::list_query(page, limit);
+        sqlx::query_as_with::<_, Project, _>(&query.0, query.1)
+            .fetch_all(conn)
+            .await
     }
 
     /// Get Project Name
@@ -130,9 +155,24 @@ impl Project {
     pub fn insert_query(&self) -> (String, SqlxValues) {
         Query::insert()
             .into_table(ProjectIden::Table)
-            .columns([ProjectIden::Id, ProjectIden::Name, ProjectIden::Description, ProjectIden::Author, ProjectIden::Created, ProjectIden::Modified])
-            .values([self.id.into(), self.name.clone().into(), self.description.clone().into(), self.author.clone().into(), self.created.into(), self.modified.into()])
-            .unwrap().build_sqlx(SqliteQueryBuilder)
+            .columns([
+                ProjectIden::Id,
+                ProjectIden::Name,
+                ProjectIden::Description,
+                ProjectIden::Author,
+                ProjectIden::Created,
+                ProjectIden::Modified,
+            ])
+            .values([
+                self.id.into(),
+                self.name.clone().into(),
+                self.description.clone().into(),
+                self.author.clone().into(),
+                self.created.into(),
+                self.modified.into(),
+            ])
+            .unwrap()
+            .build_sqlx(SqliteQueryBuilder)
     }
 
     /// Updates a Project on DB
@@ -162,15 +202,17 @@ impl Project {
                 (ProjectIden::Name, self.name.clone().into()),
                 (ProjectIden::Description, self.description.clone().into()),
                 (ProjectIden::Author, self.author.clone().into()),
-                (ProjectIden::Modified, self.modified.into())])
-            .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone())).build_sqlx(SqliteQueryBuilder)
+                (ProjectIden::Modified, self.modified.into()),
+            ])
+            .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone()))
+            .build_sqlx(SqliteQueryBuilder)
     }
 
     /// Deletes a Project on DB
     ///
     /// # Arguments
     /// * `conn` - The SQLite database connection
-    pub async fn delete(&self, conn: &mut SqliteConnection) ->Result<SqliteQueryResult, Error> {
+    pub async fn delete(&self, conn: &mut SqliteConnection) -> Result<SqliteQueryResult, Error> {
         let query = self.delete_query();
 
         sqlx::query_with(&query.0, query.1).execute(conn).await
@@ -189,7 +231,8 @@ impl Project {
     pub fn delete_query(&self) -> (String, SqlxValues) {
         Query::delete()
             .from_table(ProjectIden::Table)
-            .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone())).build_sqlx(SqliteQueryBuilder)
+            .and_where(Expr::col(ProjectIden::Id).eq(self.id.clone()))
+            .build_sqlx(SqliteQueryBuilder)
     }
 
     /// Generates a sqlx query to Find a Project on DB
@@ -205,11 +248,33 @@ impl Project {
                 ProjectIden::Description,
                 ProjectIden::Author,
                 ProjectIden::Created,
-                ProjectIden::Modified
+                ProjectIden::Modified,
             ])
             .from(ProjectIden::Table)
             .and_where(Expr::col(ProjectIden::Id).eq(id))
             .limit(1)
+            .build_sqlx(SqliteQueryBuilder)
+    }
+
+    /// Generates a sqlx query to List all Projects in the DB
+    ///
+    /// Lists all projects in the DB by providing a page and limit count.
+    /// # Arguements
+    /// * `page` - The query page
+    /// * `limit` - The row per page
+    pub fn list_query(page: u64, limit: u64) -> (String, SqlxValues) {
+        Query::select()
+            .columns([
+                ProjectIden::Id,
+                ProjectIden::Name,
+                ProjectIden::Description,
+                ProjectIden::Author,
+                ProjectIden::Created,
+                ProjectIden::Modified,
+            ])
+            .from(ProjectIden::Table)
+            .limit(limit)
+            .offset(page * limit)
             .build_sqlx(SqliteQueryBuilder)
     }
 
@@ -225,12 +290,16 @@ impl Project {
 
 #[cfg(test)]
 mod tests {
+    use super::Project;
+    use crate::config::init_memory_db;
     use sqlx::Error;
     use uuid::Uuid;
-    use crate::config::init_memory_db;
-    use super::Project;
     fn create_project() -> Project {
-        Project::new("PROJECT_NAME".into(), "PROJECT_DESCRIPTION".into(), "PROJECT_AUTHOR".into())
+        Project::new(
+            "PROJECT_NAME".into(),
+            "PROJECT_DESCRIPTION".into(),
+            "PROJECT_AUTHOR".into(),
+        )
     }
 
     #[test]
@@ -265,7 +334,8 @@ mod tests {
     async fn insert_db() {
         let query = create_project()
             .insert(&mut init_memory_db().await.unwrap())
-            .await.unwrap();
+            .await
+            .unwrap();
 
         assert_eq!(query.rows_affected(), 1);
         assert_eq!(query.last_insert_rowid(), 1);
@@ -314,7 +384,10 @@ mod tests {
         project.assign_id().assign_created();
 
         let query = Project::from_db(project.id, &mut conn).await;
-        assert_eq!(query.unwrap_err().to_string(), Error::RowNotFound.to_string());
+        assert_eq!(
+            query.unwrap_err().to_string(),
+            Error::RowNotFound.to_string()
+        );
 
         let query = project.insert(&mut conn).await.unwrap();
         assert_eq!(query.rows_affected(), 1);
