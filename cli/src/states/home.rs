@@ -3,6 +3,7 @@
 use crate::actions::{Action, Event};
 use crate::keybindings::{Keybinding, Keybindings};
 use crate::states::{AppState, AppStates, RenderState};
+use async_trait::async_trait;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Color, Modifier, Span, Style};
@@ -12,14 +13,15 @@ use sqlx::SqliteConnection;
 #[derive(Debug, Default)]
 pub struct Home {}
 
+#[async_trait]
 impl AppState for Home {
     fn display_name(&self) -> &str {
         "HOME"
     }
 
-    async fn init(&mut self, exec: &SqliteConnection) {}
+    async fn init(&mut self, exec: &mut SqliteConnection) {}
 
-    async fn tick(&mut self, exec: &SqliteConnection) {}
+    async fn tick(&mut self, exec: &mut SqliteConnection) {}
 
     fn action(&mut self, action: Action) -> Event {
         match action {

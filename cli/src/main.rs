@@ -20,7 +20,7 @@ async fn main() -> AppResult<()> {
     while app.running {
         tui.draw(&mut app)?;
         match tui.events.next().await? {
-            Event::Tick => app.tick(),
+            Event::Tick => app.tick().await,
             Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}

@@ -1,6 +1,7 @@
 use crate::actions::{Action, Event};
 use crate::keybindings::{Keybinding, Keybindings};
 use crate::states::{AppState, RenderState};
+use async_trait::async_trait;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use sqlx::SqliteConnection;
@@ -12,18 +13,19 @@ pub struct Project {
     db_page: u64,
 }
 
+#[async_trait]
 impl AppState for Project {
     fn display_name(&self) -> &str {
         "PROJECTS"
     }
 
-    async fn init(&mut self, exec: &SqliteConnection) {
+    async fn init(&mut self, exec: &mut SqliteConnection) {
         self.projects = DBProject::from_list_db(self.db_page, 12, exec)
             .await
             .unwrap()
     }
 
-    async fn tick(&mut self, exec: &SqliteConnection) {}
+    async fn tick(&mut self, exec: &mut SqliteConnection) {}
 
     fn action(&mut self, action: Action) -> Event {
         match action {

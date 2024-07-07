@@ -1,4 +1,4 @@
-use crate::states::{AppStates};
+use crate::states::AppStates;
 
 #[derive(Debug, Copy, Clone, Default)]
 pub enum Action {

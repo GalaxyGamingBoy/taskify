@@ -1,5 +1,7 @@
 //! This file contains all the handlers, i.e., key presses
 
+use std::future::IntoFuture;
+
 use crate::app::{App, AppResult};
 use crossterm::event::{KeyCode, KeyEvent};
 use crate::actions::{Action, Event};
@@ -16,7 +18,7 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
     app.state.keybindings().iter_mut().for_each(|key| {
         if key_event.code == KeyCode::Char(key.key) {
             match app.state.action(key.action) {
-                Event::Goto(v) => app.set_state(v),
+                Event::Goto(v) => app.runtime.clone().block_on(app.set_state(v).into_future()),
                 _ => {}
             }
         }
